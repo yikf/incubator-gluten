@@ -54,6 +54,7 @@ private object VeloxRuleApi {
     injector.injectTransform(_ => PushDownInputFileExpression.PreOffload)
     injector.injectTransform(c => FallbackOnANSIMode.apply(c.session))
     injector.injectTransform(c => FallbackMultiCodegens.apply(c.session))
+    injector.injectTransform(c => MergeTwoPhasesHashBaseAggregate(c.session))
     injector.injectTransform(_ => RewriteSubqueryBroadcast())
     injector.injectTransform(c => BloomFilterMightContainJointRewriteRule.apply(c.session))
     injector.injectTransform(c => ArrowScanReplaceRule.apply(c.session))

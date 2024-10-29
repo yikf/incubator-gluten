@@ -592,11 +592,17 @@ abstract class VeloxAggregateFunctionsSuite extends VeloxWholeStageTransformerSu
                           |""".stripMargin) {
       df =>
         {
+          // In Spark 3.5 and earlier, due to the small amount of data being scanned during
+          // testing, the outputPartition of BatchScanExec was SinglePartition. During the
+          // EnsureRequirements phase, the outputPartition of partial agg satisfied the
+          // requirements of its parent node, no Exchange node was added. However, in Spark 3.5
+          // and later, BatchScanExec ignores SinglePartition, the EnsureRequirements phase
+          // adds an Exchange node, MergeTwoPhasesHashBaseAggregate will not merge them.
           assert(
             getExecutedPlan(df).count(
               plan => {
                 plan.isInstanceOf[HashAggregateExecTransformer]
-              }) == 4)
+              }) == (if (isSparkVersionLE("3.4")) 2 else 3))
         }
     }
   }
@@ -617,7 +623,7 @@ abstract class VeloxAggregateFunctionsSuite extends VeloxWholeStageTransformerSu
             getExecutedPlan(df).count(
               plan => {
                 plan.isInstanceOf[HashAggregateExecTransformer]
-              }) == 4)
+              }) == (if (isSparkVersionLE("3.4")) 2 else 3))
         }
     }
   }
@@ -865,7 +871,7 @@ abstract class VeloxAggregateFunctionsSuite extends VeloxWholeStageTransformerSu
             getExecutedPlan(df).count(
               plan => {
                 plan.isInstanceOf[HashAggregateExecTransformer]
-              }) == 2)
+              }) == (if (isSparkVersionLE("3.4")) 1 else 2))
         }
     }
 
@@ -880,7 +886,7 @@ abstract class VeloxAggregateFunctionsSuite extends VeloxWholeStageTransformerSu
             getExecutedPlan(df).count(
               plan => {
                 plan.isInstanceOf[HashAggregateExecTransformer]
-              }) == 2)
+              }) == (if (isSparkVersionLE("3.4")) 1 else 2))
         }
     }
 
@@ -1248,6 +1254,29 @@ class VeloxAggregateFunctionsFlushSuite extends VeloxAggregateFunctionsSuite {
           assert(
             executedPlan.exists(plan => plan.isInstanceOf[FlushableHashAggregateExecTransformer]))
       }
+    }
+  }
+
+  test("Merge two phase hash-based aggregate into one aggregate") {
+    withTempView("t1") {
+      spark.range(100).selectExpr("id as key").createOrReplaceTempView("t1")
+
+      val SQL =
+        """
+          | SELECT key, count(key)
+          | FROM t1
+          | GROUP BY key
+          |""".stripMargin
+
+      compareResultsAgainstVanillaSpark(
+        SQL,
+        customCheck = df => {
+          val aggregateExecTransformers = collect(df.queryExecution.executedPlan) {
+            case agg: HashAggregateExecBaseTransformer => agg
+          }
+          assert(aggregateExecTransformers.size == 1)
+        }
+      )
     }
   }
 }
