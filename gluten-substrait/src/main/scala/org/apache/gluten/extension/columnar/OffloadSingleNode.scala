@@ -21,6 +21,7 @@ import org.apache.gluten.backendsapi.BackendsApiManager
 import org.apache.gluten.exception.GlutenNotSupportException
 import org.apache.gluten.execution._
 import org.apache.gluten.extension.GlutenPlan
+import org.apache.gluten.extension.columnar.rewrite.PullOutPreProject
 import org.apache.gluten.logging.LogLevelUtil
 import org.apache.gluten.sql.shims.SparkShimLoader
 
@@ -264,7 +265,12 @@ object OffloadOthers {
         case plan: SortExec =>
           val child = plan.child
           logDebug(s"Columnar Processing for ${plan.getClass} is currently supported.")
-          SortExecTransformer(plan.sortOrder, plan.global, child, plan.testSpillFrequency)
+          val sortExecTransformer =
+            SortExecTransformer(plan.sortOrder, plan.global, child, plan.testSpillFrequency)
+          plan
+            .getTagValue(PullOutPreProject.originalOrders)
+            .foreach(sortExecTransformer.setTagValue(PullOutPreProject.originalOrders, _))
+          sortExecTransformer
         case plan: TakeOrderedAndProjectExec =>
           logDebug(s"Columnar Processing for ${plan.getClass} is currently supported.")
           val child = plan.child
