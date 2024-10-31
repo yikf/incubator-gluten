@@ -21,6 +21,7 @@ import org.apache.gluten.utils.{BackendTestSettings, SQLQueryTestSettings}
 import org.apache.spark.sql._
 import org.apache.spark.sql.GlutenTestConstants.GLUTEN_TEST
 import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.connector._
 import org.apache.spark.sql.errors._
 import org.apache.spark.sql.execution._
@@ -308,11 +309,8 @@ class ClickHouseTestSettings extends BackendTestSettings {
     .exclude("SPARK-40660: Switch to XORShiftRandom to distribute elements")
   enableSuite[GlutenDateFunctionsSuite]
     .exclude("function to_date")
-    .exclude("from_unixtime")
     .exclude("unix_timestamp")
     .exclude("to_unix_timestamp")
-    .exclude("to_timestamp")
-    .excludeGlutenTest("to_timestamp")
     .exclude("to_timestamp with microseconds precision")
     .exclude("SPARK-30668: use legacy timestamp parser in to_timestamp")
     .exclude("SPARK-30766: date_trunc of old timestamps to hours and days")
@@ -1876,6 +1874,7 @@ class ClickHouseTestSettings extends BackendTestSettings {
     .excludeGlutenTest("fallbackSummary with cached data and shuffle")
   enableSuite[GlutenSparkSessionExtensionSuite]
   enableSuite[GlutenHiveSQLQueryCHSuite]
+  enableSuite[GlutenPercentileSuite]
 
   override def getSQLQueryTestSettings: SQLQueryTestSettings = ClickHouseSQLQueryTestSettings
 }
