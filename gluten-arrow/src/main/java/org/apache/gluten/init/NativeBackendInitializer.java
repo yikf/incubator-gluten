@@ -19,15 +19,12 @@ package org.apache.gluten.init;
 import org.apache.gluten.GlutenConfig;
 import org.apache.gluten.utils.ConfigUtil;
 
-import org.apache.spark.util.SparkShutdownManagerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import scala.runtime.BoxedUnit;
 
 // Initialize native backend before calling any native methods from Java side.
 public final class NativeBackendInitializer {
@@ -58,11 +55,6 @@ public final class NativeBackendInitializer {
       return;
     }
     initialize0(conf);
-    SparkShutdownManagerUtil.addHook(
-        () -> {
-          shutdown();
-          return BoxedUnit.UNIT;
-        });
   }
 
   private void initialize0(scala.collection.Map<String, String> conf) {
@@ -76,6 +68,21 @@ public final class NativeBackendInitializer {
   }
 
   private native void initialize(byte[] configPlan);
+
+  /**
+   * Spark DriverPlugin/ExecutorPlugin will only invoke NativeBackendInitializer#shutdownBackend
+   * method once in its shutdown method. In cluster mode, NativeBackendInitializer#shutdownBackend
+   * only will be invoked in different JVM. In local mode, NativeBackendInitializer#shutdownBackend
+   * will be invoked twice in same thread, driver first then executor, initialized flag ensure only
+   * invoke shutdownBackend once, so there are no race condition here.
+   */
+  public void shutdownBackend() {
+    if (!initialized.compareAndSet(true, false)) {
+      // Already called.
+      return;
+    }
+    shutdown();
+  }
 
   private native void shutdown();
 }

@@ -94,7 +94,7 @@ class VeloxListenerApi extends ListenerApi with Logging {
     UdfJniWrapper.registerFunctionSignatures()
   }
 
-  override def onDriverShutdown(): Unit = shutdown()
+  override def onDriverShutdown(): Unit = shutdown(true)
 
   override def onExecutorStart(pc: PluginContext): Unit = {
     val conf = pc.conf()
@@ -120,7 +120,7 @@ class VeloxListenerApi extends ListenerApi with Logging {
     initialize(conf, isDriver = false)
   }
 
-  override def onExecutorShutdown(): Unit = shutdown()
+  override def onExecutorShutdown(): Unit = shutdown(false)
 
   private def initialize(conf: SparkConf, isDriver: Boolean): Unit = {
     // Force batch type initializations.
@@ -173,8 +173,13 @@ class VeloxListenerApi extends ListenerApi with Logging {
     GlutenFormatFactory.register(new VeloxRowSplitter())
   }
 
-  private def shutdown(): Unit = {
-    // TODO shutdown implementation in velox to release resources
+  private def shutdown(isDriver: Boolean): Unit = {
+    if (isDriver) {
+      driverInitialized.compareAndSet(true, false)
+    } else {
+      executorInitialized.compareAndSet(true, false)
+    }
+    NativeBackendInitializer.forBackend(VeloxBackend.BACKEND_NAME).shutdownBackend()
   }
 }
 
