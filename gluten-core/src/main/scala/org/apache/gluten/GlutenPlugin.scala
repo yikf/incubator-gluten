@@ -249,6 +249,18 @@ private[gluten] class GlutenDriverPlugin extends DriverPlugin with Logging {
         s"${COLUMNAR_VELOX_CACHE_ENABLED.key} and " +
           s"${COLUMNAR_VELOX_FILE_HANDLE_CACHE_ENABLED.key} should be enabled together.")
     }
+
+    val maxLoadQuantumOfVeloxCache = 8 * 1024 * 1024
+    if (
+      conf.getBoolean(COLUMNAR_VELOX_CACHE_ENABLED.key, false) &&
+      conf.getSizeAsBytes(LOAD_QUANTUM.key, maxLoadQuantumOfVeloxCache) > maxLoadQuantumOfVeloxCache
+    ) {
+      logWarning(
+        s"Velox currently only support up to 8MB load quantum size on SSD cache, " +
+          s"change config {$LOAD_QUANTUM.key} value from " +
+          s"${conf.getSizeAsBytes(LOAD_QUANTUM.key, maxLoadQuantumOfVeloxCache)} to $maxLoadQuantumOfVeloxCache")
+      conf.set(LOAD_QUANTUM.key, maxLoadQuantumOfVeloxCache.toString)
+    }
   }
 }
 
