@@ -20,6 +20,8 @@ import org.apache.gluten.execution.VeloxWholeStageTransformerSuite
 import org.apache.gluten.test.FallbackUtil
 
 import org.apache.spark.SparkConf
+import org.apache.spark.sql.types.{LongType, StructField, StructType}
+import org.apache.spark.sql.util.QueryExecutionListener
 import org.apache.spark.util.Utils
 
 import org.apache.hadoop.fs.Path
@@ -45,6 +47,22 @@ class VeloxParquetWriteSuite extends VeloxWholeStageTransformerSuite {
 
   private def getParquetFileExtension(codec: String): String = {
     s"${parquetCompressionCodecExtensions(codec)}.parquet"
+  }
+
+  private def withQueryExecutionListener(f: => Unit)(check: QueryExecution => Unit): Unit = {
+    val queryListener = new QueryExecutionListener {
+      override def onFailure(f: String, qe: QueryExecution, e: Exception): Unit = {}
+      override def onSuccess(funcName: String, qe: QueryExecution, duration: Long): Unit = {
+        check(qe)
+      }
+    }
+    try {
+      spark.listenerManager.register(queryListener)
+      f
+      spark.sparkContext.listenerBus.waitUntilEmpty()
+    } finally {
+      spark.listenerManager.unregister(queryListener)
+    }
   }
 
   override def beforeAll(): Unit = {
@@ -148,6 +166,17 @@ class VeloxParquetWriteSuite extends VeloxWholeStageTransformerSuite {
         "CREATE TABLE bucket USING PARQUET CLUSTERED BY (p) INTO 7 BUCKETS " +
           "AS SELECT * FROM bucket_temp")
       Assert.assertTrue(FallbackUtil.hasFallback(df.queryExecution.executedPlan))
+    }
+  }
+
+  test("fallback if exists non-nullable schema") {
+    withTempPath {
+      f =>
+        withQueryExecutionListener {
+          val schema = StructType(Seq(StructField("id", LongType, nullable = false)))
+          val data = spark.range(10).toDF().rdd
+          spark.createDataFrame(data, schema).write.save(s"$f")
+        }(qe => FallbackUtil.hasFallback(qe.executedPlan))
     }
   }
 }

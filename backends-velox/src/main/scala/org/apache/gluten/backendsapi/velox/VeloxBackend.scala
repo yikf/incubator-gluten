@@ -316,14 +316,10 @@ object VeloxBackendSettings extends BackendSettingsApi {
   }
 
   override def supportNativeWrite(fields: Array[StructField]): Boolean = {
-    fields.map {
-      field =>
-        field.dataType match {
-          case _: StructType | _: ArrayType | _: MapType => return false
-          case _ =>
-        }
-    }
-    true
+    !fields.map(_.dataType).exists {
+      case _: StructType | _: ArrayType | _: MapType => true
+      case _ => false
+    } && fields.forall(_.nullable)
   }
 
   override def supportNativeMetadataColumns(): Boolean = true
