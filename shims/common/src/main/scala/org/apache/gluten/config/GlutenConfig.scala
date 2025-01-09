@@ -85,8 +85,6 @@ class GlutenConfig(conf: SQLConf) extends Logging {
   def shuffledHashJoinOptimizeBuildSide: Boolean =
     getConf(COLUMNAR_SHUFFLED_HASH_JOIN_OPTIMIZE_BUILD_SIDE)
 
-  def enableNativeColumnarToRow: Boolean = getConf(COLUMNAR_COLUMNAR_TO_ROW_ENABLED)
-
   def forceShuffledHashJoin: Boolean = getConf(COLUMNAR_FORCE_SHUFFLED_HASH_JOIN_ENABLED)
 
   def enableColumnarSortMergeJoin: Boolean = getConf(COLUMNAR_SORTMERGEJOIN_ENABLED)
@@ -106,8 +104,6 @@ class GlutenConfig(conf: SQLConf) extends Logging {
   def enableColumnarArrowUDF: Boolean = getConf(COLUMNAR_ARROW_UDF_ENABLED)
 
   def enableColumnarCoalesce: Boolean = getConf(COLUMNAR_COALESCE_ENABLED)
-
-  def columnarTableCacheEnabled: Boolean = getConf(COLUMNAR_TABLE_CACHE_ENABLED)
 
   def enableRewriteDateTimestampComparison: Boolean =
     getConf(ENABLE_REWRITE_DATE_TIMESTAMP_COMPARISON)
@@ -169,16 +165,11 @@ class GlutenConfig(conf: SQLConf) extends Logging {
 
   def enablePreferColumnar: Boolean = getConf(COLUMNAR_PREFER_ENABLED)
 
-  def enableOneRowRelationColumnar: Boolean = getConf(COLUMNAR_ONE_ROW_RELATION_ENABLED)
-
   def physicalJoinOptimizationThrottle: Integer =
     getConf(COLUMNAR_PHYSICAL_JOIN_OPTIMIZATION_THROTTLE)
 
   def enablePhysicalJoinOptimize: Boolean =
     getConf(COLUMNAR_PHYSICAL_JOIN_OPTIMIZATION_ENABLED)
-
-  def logicalJoinOptimizationThrottle: Integer =
-    getConf(COLUMNAR_LOGICAL_JOIN_OPTIMIZATION_THROTTLE)
 
   def enableScanOnly: Boolean = getConf(COLUMNAR_SCAN_ONLY_ENABLED)
 
@@ -217,9 +208,6 @@ class GlutenConfig(conf: SQLConf) extends Logging {
     getConf(COLUMNAR_SHUFFLE_READER_BUFFER_SIZE)
 
   def maxBatchSize: Int = getConf(COLUMNAR_MAX_BATCH_SIZE)
-
-  def columnarToRowMemThreshold: Long =
-    getConf(GLUTEN_COLUMNAR_TO_ROW_MEM_THRESHOLD)
 
   def shuffleWriterBufferSize: Int = getConf(SHUFFLE_WRITER_BUFFER_SIZE)
     .getOrElse(maxBatchSize)
@@ -271,8 +259,6 @@ class GlutenConfig(conf: SQLConf) extends Logging {
 
   def memoryIsolation: Boolean = getConf(COLUMNAR_MEMORY_ISOLATION)
 
-  def memoryBacktraceAllocation: Boolean = getConf(COLUMNAR_MEMORY_BACKTRACE_ALLOCATION)
-
   def numTaskSlotsPerExecutor: Int = {
     val numSlots = getConf(NUM_TASK_SLOTS_PER_EXECUTOR)
     assert(numSlots > 0, s"Number of task slot not found. This should not happen.")
@@ -301,42 +287,7 @@ class GlutenConfig(conf: SQLConf) extends Logging {
 
   def rasRough2VanillaCost: Long = getConf(RAS_ROUGH2_VANILLA_COST)
 
-  def enableVeloxCache: Boolean = getConf(COLUMNAR_VELOX_CACHE_ENABLED)
-
-  def veloxMemCacheSize: Long = getConf(COLUMNAR_VELOX_MEM_CACHE_SIZE)
-
-  def veloxSsdCachePath: String = getConf(COLUMNAR_VELOX_SSD_CACHE_PATH)
-
-  def veloxSsdCacheSize: Long = getConf(COLUMNAR_VELOX_SSD_CACHE_SIZE)
-
-  def veloxSsdCacheShards: Integer = getConf(COLUMNAR_VELOX_SSD_CACHE_SHARDS)
-
-  def veloxSsdCacheIOThreads: Integer = getConf(COLUMNAR_VELOX_SSD_CACHE_IO_THREADS)
-
-  def veloxSsdODirectEnabled: Boolean = getConf(COLUMNAR_VELOX_SSD_ODIRECT_ENABLED)
-
-  def veloxConnectorIOThreads: Int = {
-    getConf(COLUMNAR_VELOX_CONNECTOR_IO_THREADS).getOrElse(numTaskSlotsPerExecutor)
-  }
-
-  def veloxSplitPreloadPerDriver: Integer = getConf(COLUMNAR_VELOX_SPLIT_PRELOAD_PER_DRIVER)
-
-  def veloxSpillStrategy: String = getConf(COLUMNAR_VELOX_SPILL_STRATEGY)
-
-  def veloxMaxSpillLevel: Int = getConf(COLUMNAR_VELOX_MAX_SPILL_LEVEL)
-
-  def veloxMaxSpillFileSize: Long = getConf(COLUMNAR_VELOX_MAX_SPILL_FILE_SIZE)
-
   def veloxSpillFileSystem: String = getConf(COLUMNAR_VELOX_SPILL_FILE_SYSTEM)
-
-  def veloxMaxSpillRunRows: Long = getConf(COLUMNAR_VELOX_MAX_SPILL_RUN_ROWS)
-
-  def veloxMaxSpillBytes: Long = getConf(COLUMNAR_VELOX_MAX_SPILL_BYTES)
-
-  def veloxBloomFilterExpectedNumItems: Long =
-    getConf(COLUMNAR_VELOX_BLOOM_FILTER_EXPECTED_NUM_ITEMS)
-
-  def veloxBloomFilterNumBits: Long = getConf(COLUMNAR_VELOX_BLOOM_FILTER_NUM_BITS)
 
   def veloxBloomFilterMaxNumBits: Long = getConf(COLUMNAR_VELOX_BLOOM_FILTER_MAX_NUM_BITS)
 
@@ -371,7 +322,7 @@ class GlutenConfig(conf: SQLConf) extends Logging {
   def chColumnarShuffleSpillThreshold: Long = {
     val threshold = getConf(COLUMNAR_CH_SHUFFLE_SPILL_THRESHOLD)
     if (threshold == 0) {
-      (getConf(COLUMNAR_TASK_OFFHEAP_SIZE_IN_BYTES) * 0.9).toLong
+      (taskOffHeapMemorySize * 0.9).toLong
     } else {
       threshold
     }
@@ -425,64 +376,36 @@ class GlutenConfig(conf: SQLConf) extends Logging {
 
   def enableFallbackReport: Boolean = getConf(FALLBACK_REPORTER_ENABLED)
 
-  def enableVeloxUserExceptionStacktrace: Boolean =
-    getConf(COLUMNAR_VELOX_ENABLE_USER_EXCEPTION_STACKTRACE)
-
-  def memoryUseHugePages: Boolean =
-    getConf(COLUMNAR_VELOX_MEMORY_USE_HUGE_PAGES)
-
   def debug: Boolean = getConf(DEBUG_ENABLED)
-  def debugKeepJniWorkspace: Boolean = getConf(DEBUG_KEEP_JNI_WORKSPACE)
+
   def collectUtStats: Boolean = getConf(UT_STATISTIC)
+
   def benchmarkStageId: Int = getConf(BENCHMARK_TASK_STAGEID)
+
   def benchmarkPartitionId: String = getConf(BENCHMARK_TASK_PARTITIONID)
+
   def benchmarkTaskId: String = getConf(BENCHMARK_TASK_TASK_ID)
+
   def benchmarkSaveDir: String = getConf(BENCHMARK_SAVE_DIR)
+
   def textInputMaxBlockSize: Long = getConf(TEXT_INPUT_ROW_MAX_BLOCK_SIZE)
+
   def textIputEmptyAsDefault: Boolean = getConf(TEXT_INPUT_EMPTY_AS_DEFAULT)
+
   def enableParquetRowGroupMaxMinIndex: Boolean =
     getConf(ENABLE_PARQUET_ROW_GROUP_MAX_MIN_INDEX)
 
   def enableVeloxFlushablePartialAggregation: Boolean =
     getConf(VELOX_FLUSHABLE_PARTIAL_AGGREGATION_ENABLED)
-  def maxFlushableAggregationMemoryRatio: Double =
-    getConf(MAX_PARTIAL_AGGREGATION_MEMORY_RATIO)
-  def maxExtendedFlushableAggregationMemoryRatio: Double =
-    getConf(MAX_PARTIAL_AGGREGATION_MEMORY_RATIO)
-  def abandonFlushableAggregationMinPct: Int =
-    getConf(ABANDON_PARTIAL_AGGREGATION_MIN_PCT)
-  def abandonFlushableAggregationMinRows: Int =
-    getConf(ABANDON_PARTIAL_AGGREGATION_MIN_ROWS)
 
   // Please use `BackendsApiManager.getSettings.enableNativeWriteFiles()` instead
   def enableNativeWriter: Option[Boolean] = getConf(NATIVE_WRITER_ENABLED)
 
   def enableNativeArrowReader: Boolean = getConf(NATIVE_ARROW_READER_ENABLED)
 
-  def directorySizeGuess: Long =
-    getConf(DIRECTORY_SIZE_GUESS)
-  def filePreloadThreshold: Long =
-    getConf(FILE_PRELOAD_THRESHOLD)
-  def prefetchRowGroups: Int =
-    getConf(PREFETCH_ROW_GROUPS)
-  def loadQuantum: Long =
-    getConf(LOAD_QUANTUM)
-  def maxCoalescedDistance: String =
-    getConf(MAX_COALESCED_DISTANCE_BYTES)
-  def maxCoalescedBytes: Long =
-    getConf(MAX_COALESCED_BYTES)
-  def cachePrefetchMinPct: Int =
-    getConf(CACHE_PREFETCH_MINPCT)
-
   def enableColumnarProjectCollapse: Boolean = getConf(ENABLE_COLUMNAR_PROJECT_COLLAPSE)
 
   def enableColumnarPartialProject: Boolean = getConf(ENABLE_COLUMNAR_PARTIAL_PROJECT)
-
-  def awsSdkLogLevel: String = getConf(AWS_SDK_LOG_LEVEL)
-
-  def awsS3RetryMode: String = getConf(AWS_S3_RETRY_MODE)
-
-  def awsConnectionTimeout: String = getConf(AWS_S3_CONNECT_TIMEOUT)
 
   def enableCastAvgAggregateFunction: Boolean = getConf(COLUMNAR_NATIVE_CAST_AGGREGATE_ENABLED)
 
@@ -1032,13 +955,6 @@ object GlutenConfig {
       .booleanConf
       .createWithDefault(true)
 
-  val COLUMNAR_COLUMNAR_TO_ROW_ENABLED =
-    buildConf("spark.gluten.sql.columnar.columnarToRow")
-      .internal()
-      .doc("Enable or disable columnar columnarToRow.")
-      .booleanConf
-      .createWithDefault(true)
-
   val COLUMNAR_SORTMERGEJOIN_ENABLED =
     buildConf("spark.gluten.sql.columnar.sortMergeJoin")
       .internal()
@@ -1126,13 +1042,6 @@ object GlutenConfig {
       .booleanConf
       .createWithDefault(true)
 
-  val COLUMNAR_ONE_ROW_RELATION_ENABLED =
-    buildConf("spark.gluten.sql.columnar.oneRowRelation")
-      .internal()
-      .doc("Enable or disable columnar `OneRowRelation`.")
-      .booleanConf
-      .createWithDefault(true)
-
   val COLUMNAR_TABLE_CACHE_ENABLED =
     buildConf("spark.gluten.sql.columnar.tableCache")
       .internal()
@@ -1153,13 +1062,6 @@ object GlutenConfig {
       .doc("Enable or disable columnar physicalJoinOptimize.")
       .booleanConf
       .createWithDefault(false)
-
-  val COLUMNAR_LOGICAL_JOIN_OPTIMIZATION_THROTTLE =
-    buildConf("spark.gluten.sql.columnar.logicalJoinOptimizationLevel")
-      .internal()
-      .doc("Fallback to row operators if there are several continuous joins.")
-      .intConf
-      .createWithDefault(12)
 
   val COLUMNAR_SCAN_ONLY_ENABLED =
     buildConf("spark.gluten.sql.columnar.scanOnly")

@@ -111,7 +111,7 @@ class ColumnarCachedBatchSerializer extends CachedBatchSerializer with Logging {
     // See: `InMemoryRelation.apply()`.
     // So we should disallow columnar input if using vanilla Spark columnar scan.
     val noVanillaSparkColumnarScan = glutenConf.getConf(GlutenConfig.COLUMNAR_FILESCAN_ENABLED) ||
-      !glutenConf.getConf(GlutenConfig.VANILLA_VECTORIZED_READERS_ENABLED)
+      !glutenConf.enableVanillaVectorizedReaders
     glutenConf.getConf(GlutenConfig.GLUTEN_ENABLED) && validateSchema(
       schema) && noVanillaSparkColumnarScan
   }
