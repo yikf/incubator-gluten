@@ -16,6 +16,7 @@
  */
 package org.apache.gluten.execution
 
+import org.apache.gluten.backendsapi.clickhouse.CHConf
 import org.apache.gluten.config.GlutenConfig
 
 import org.apache.spark.SparkConf
@@ -233,7 +234,7 @@ class GlutenClickHouseTPCHNullableSuite extends GlutenClickHouseTPCHAbstractSuit
 
     Seq(("true", false), ("false", true)).foreach(
       conf => {
-        withSQLConf((GlutenConfig.ENABLE_CH_REWRITE_DATE_CONVERSION.key, conf._1)) {
+        withSQLConf((CHConf.ENABLE_CH_REWRITE_DATE_CONVERSION.key, conf._1)) {
           runSql(sqlStr)(
             df => {
               val project = df.queryExecution.executedPlan.collect {

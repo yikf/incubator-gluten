@@ -17,7 +17,7 @@
 package org.apache.spark.sql
 
 import org.apache.gluten.backendsapi.BackendsApiManager
-import org.apache.gluten.config.GlutenConfig
+import org.apache.gluten.config.{GlutenConfig, VeloxConfig}
 import org.apache.gluten.execution.HashAggregateExecBaseTransformer
 
 import org.apache.spark.sql.execution.adaptive.AdaptiveSparkPlanHelper
@@ -33,10 +33,10 @@ class GlutenBloomFilterAggregateQuerySuite
     val table = "bloom_filter_test"
     withSQLConf(
       SQLConf.RUNTIME_BLOOM_FILTER_MAX_NUM_ITEMS.key -> "5000000",
-      GlutenConfig.COLUMNAR_VELOX_BLOOM_FILTER_MAX_NUM_BITS.key -> "4194304"
+      VeloxConfig.COLUMNAR_VELOX_BLOOM_FILTER_MAX_NUM_BITS.key -> "4194304"
     ) {
       val numEstimatedItems = 5000000L
-      val numBits = GlutenConfig.get.veloxBloomFilterMaxNumBits
+      val numBits = VeloxConfig.get.veloxBloomFilterMaxNumBits
       val sqlString = s"""
                          |SELECT every(might_contain(
                          |            (SELECT bloom_filter_agg(col,
@@ -71,7 +71,7 @@ class GlutenBloomFilterAggregateQuerySuite
   testGluten("Test bloom_filter_agg filter fallback") {
     val table = "bloom_filter_test"
     val numEstimatedItems = 5000000L
-    val numBits = GlutenConfig.get.veloxBloomFilterMaxNumBits
+    val numBits = VeloxConfig.get.veloxBloomFilterMaxNumBits
     val sqlString = s"""
                        |SELECT col positive_membership_test
                        |FROM $table
@@ -117,7 +117,7 @@ class GlutenBloomFilterAggregateQuerySuite
   testGluten("Test bloom_filter_agg agg fallback") {
     val table = "bloom_filter_test"
     val numEstimatedItems = 5000000L
-    val numBits = GlutenConfig.get.veloxBloomFilterMaxNumBits
+    val numBits = VeloxConfig.get.veloxBloomFilterMaxNumBits
     val sqlString = s"""
                        |SELECT col positive_membership_test
                        |FROM $table

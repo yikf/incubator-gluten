@@ -26,7 +26,5 @@ trait GlutenSQLTestUtils extends SparkFunSuite with SharedSparkSession {
   override protected def afterAll(): Unit = {
     DeltaLog.clearCache()
     super.afterAll()
-    // init GlutenConfig in the next beforeAll
-    GlutenConfig.ins = null
   }
 }

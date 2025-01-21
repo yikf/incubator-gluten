@@ -19,6 +19,7 @@ package org.apache.gluten.backendsapi.clickhouse
 import org.apache.gluten.config.GlutenConfig
 
 import org.apache.spark.SparkConf
+import org.apache.spark.network.util.ByteUnit
 import org.apache.spark.sql.internal.SQLConf
 
 object CHConf {
@@ -58,16 +59,66 @@ object CHConf {
 
   def get: CHConf = new CHConf(SQLConf.get)
 
-  import SQLConf._
+  import GlutenConfig._
 
   val ENABLE_ONEPIPELINE_MERGETREE_WRITE =
     buildConf(prefixOf("mergetree.write.pipeline"))
       .doc("Using one pipeline to write data to MergeTree table in Spark 3.5")
       .booleanConf
       .createWithDefault(false)
+
+  val COLUMNAR_CH_SHUFFLE_SPILL_THRESHOLD =
+    buildConf("spark.gluten.sql.columnar.backend.ch.spillThreshold")
+      .internal()
+      .doc("Shuffle spill threshold on ch backend")
+      .bytesConf(ByteUnit.BYTE)
+      .createWithDefaultString("0MB")
+
+  val COLUMNAR_CH_MAX_SORT_BUFFER_SIZE =
+    buildConf("spark.gluten.sql.columnar.backend.ch.maxSortBufferSize")
+      .internal()
+      .doc("The maximum size of sort shuffle buffer in CH backend.")
+      .bytesConf(ByteUnit.BYTE)
+      .createWithDefaultString("0")
+
+  val COLUMNAR_CH_FORCE_MEMORY_SORT_SHUFFLE =
+    buildConf("spark.gluten.sql.columnar.backend.ch.forceMemorySortShuffle")
+      .internal()
+      .doc("Whether to force to use memory sort shuffle in CH backend. ")
+      .booleanConf
+      .createWithDefault(false)
+
+  val ENABLE_CH_REWRITE_DATE_CONVERSION =
+    buildConf("spark.gluten.sql.columnar.backend.ch.rewrite.dateConversion")
+      .internal()
+      .doc(
+        "Rewrite the conversion between date and string."
+          + "For example `to_date(from_unixtime(unix_timestamp(stringType, 'yyyyMMdd')))`"
+          + " will be rewritten to `to_date(stringType)`")
+      .booleanConf
+      .createWithDefault(true)
 }
 
 class CHConf(conf: SQLConf) extends GlutenConfig(conf) {
+  import CHConf._
+
   def enableOnePipelineMergeTreeWrite: Boolean =
-    conf.getConf(CHConf.ENABLE_ONEPIPELINE_MERGETREE_WRITE)
+    getConf(CHConf.ENABLE_ONEPIPELINE_MERGETREE_WRITE)
+
+  def chColumnarShuffleSpillThreshold: Long = {
+    val threshold = getConf(COLUMNAR_CH_SHUFFLE_SPILL_THRESHOLD)
+    if (threshold == 0) {
+      (taskOffHeapMemorySize * 0.9).toLong
+    } else {
+      threshold
+    }
+  }
+
+  def chColumnarMaxSortBufferSize: Long = getConf(COLUMNAR_CH_MAX_SORT_BUFFER_SIZE)
+
+  def chColumnarForceMemorySortShuffle: Boolean =
+    getConf(COLUMNAR_CH_FORCE_MEMORY_SORT_SHUFFLE)
+
+  def enableCHRewriteDateConversion: Boolean =
+    getConf(ENABLE_CH_REWRITE_DATE_CONVERSION)
 }
