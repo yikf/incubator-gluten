@@ -165,8 +165,6 @@ abstract class GlutenClickHouseTPCDSAbstractSuite
     }
 
     FileUtils.forceDelete(new File(basePath))
-    // init GlutenConfig in the next beforeAll
-    GlutenConfig.ins = null
   }
 
   protected def runTPCDSQuery(

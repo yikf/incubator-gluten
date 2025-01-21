@@ -70,8 +70,6 @@ class GlutenClickHouseSyntheticDataSuite
   override protected def afterAll(): Unit = {
     DeltaLog.clearCache()
     super.afterAll()
-    // init GlutenConfig in the next beforeAll
-    GlutenConfig.ins = null
   }
 
   test("test all data types all agg") {

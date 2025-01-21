@@ -591,8 +591,6 @@ abstract class GlutenClickHouseTPCHAbstractSuite
     ClickhouseSnapshot.clearAllFileStatusCache()
     DeltaLog.clearCache()
     super.afterAll()
-    // init GlutenConfig in the next beforeAll
-    GlutenConfig.ins = null
   }
 
   override protected def runTPCHQuery(
