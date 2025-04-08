@@ -85,7 +85,7 @@ abstract class HudiSuite extends WholeStageTransformerSuite {
   }
 
   // FIXME: flaky leaked file systems issue
-  ignore("hudi: mor", Some("3.2")) {
+  ignoreWithSpecifiedSparkVersion("hudi: mor", Some("3.2")) {
     withTable("hudi_mor") {
       spark.sql(s"""
                    |create table hudi_mor (id int, name string, ts bigint)
