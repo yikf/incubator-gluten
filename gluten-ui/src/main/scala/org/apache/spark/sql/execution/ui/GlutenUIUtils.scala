@@ -16,13 +16,21 @@
  */
 package org.apache.spark.sql.execution.ui
 
+import org.apache.gluten.config.GlutenConfig.GLUTEN_UI_ENABLED
 import org.apache.gluten.events.GlutenEvent
 
 import org.apache.spark.SparkContext
 import org.apache.spark.status.ElementTrackingStore
 
-object GlutenEventUtils {
-  def post(sc: SparkContext, event: GlutenEvent): Unit = {
+object GlutenUIUtils {
+
+  def uiEnabled(sc: SparkContext): Boolean = {
+    sc.ui.isDefined && sc.getConf.getBoolean(
+      GLUTEN_UI_ENABLED.key,
+      GLUTEN_UI_ENABLED.defaultValue.get)
+  }
+
+  def postEvent(sc: SparkContext, event: GlutenEvent): Unit = {
     sc.listenerBus.post(event)
   }
 
