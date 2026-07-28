@@ -72,10 +72,12 @@ case class MergeTwoPhasesHashBaseAggregate(session: SparkSession)
   private def toCompleteAggregateExpressions(
       partialAgg: BaseAggregateExec,
       finalAggExpressions: Seq[AggregateExpression]): Seq[AggregateExpression] = {
-    finalAggExpressions.zip(partialAgg.aggregateExpressions).map {
-      case (finalExpr, partialExpr) =>
-        finalExpr.copy(mode = Complete, filter = partialExpr.filter)
-    }
+require(
+  finalAggExpressions.length == partialAgg.aggregateExpressions.length,
+  s"Expected partial and final aggregate expression lists to align 1:1, but got ${partialAgg.aggregateExpressions.length} partial and ${finalAggExpressions.length} final expressions")
+finalAggExpressions.zip(partialAgg.aggregateExpressions).map { case (finalExpr, partialExpr) =>
+  finalExpr.copy(mode = Complete, filter = partialExpr.filter)
+}
   }
 
   override def apply(plan: SparkPlan): SparkPlan = {
