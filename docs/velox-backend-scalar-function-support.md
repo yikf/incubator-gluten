@@ -370,7 +370,7 @@
 | encode             | Encode                      |          |                                                         |
 | endswith           | EndsWithExpressionBuilder   | PS       | BinaryType unsupported                                  |
 | find_in_set        | FindInSet                   | S        |                                                         |
-| format_number      | FormatNumber                |          |                                                         |
+| format_number      | FormatNumber                | PS       | format_number only supports tinyint, smallint, integer, bigint, float and double input; DecimalType input is not supported in Velox |
 | format_string      | FormatString                |          |                                                         |
 | initcap            | InitCap                     | S        |                                                         |
 | instr              | StringInstr                 | S        |                                                         |

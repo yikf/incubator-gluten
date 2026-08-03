@@ -101,6 +101,16 @@ object RaiseErrorRestrictions extends ExpressionRestrictions {
   override val restrictionMessages: Array[String] = Array(ONLY_SUPPORT_ERROR_MESSAGE)
 }
 
+object FormatNumberRestrictions extends ExpressionRestrictions {
+  val NOT_SUPPORT_DECIMAL_INPUT: String =
+    s"${ExpressionNames.FORMAT_NUMBER} only supports tinyint, smallint, integer, bigint, " +
+      s"float and double input; DecimalType input is not supported in Velox"
+
+  override val functionName: String = ExpressionNames.FORMAT_NUMBER
+
+  override val restrictionMessages: Array[String] = Array(NOT_SUPPORT_DECIMAL_INPUT)
+}
+
 object ExpressionRestrictions {
   // Called by gen-function-support-docs.py to get all restrictions.
   def listAllRestrictions(): Array[ExpressionRestrictions] = {
@@ -109,7 +119,8 @@ object ExpressionRestrictions {
       FromJsonRestrictions,
       ToJsonRestrictions,
       Unbase64Restrictions,
-      Base64Restrictions
+      Base64Restrictions,
+      FormatNumberRestrictions
     )
   }
 }
