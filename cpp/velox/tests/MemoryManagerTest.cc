@@ -20,6 +20,9 @@
 #include "memory/VeloxMemoryManager.h"
 #include "velox/common/base/tests/GTestUtils.h"
 
+#include <chrono>
+#include <thread>
+
 namespace gluten {
 
 using namespace facebook::velox;
@@ -93,6 +96,30 @@ TEST_F(MemoryManagerTest, memoryPoolWithBlockReseravtion) {
   auto currentBytes = listener_->currentBytes();
   ASSERT_EQ(vmm_->shrink(0), currentBytes);
   ASSERT_EQ(listener_->currentBytes(), 0);
+}
+
+// Regression test for the teardown race that crashed the JVM with a native
+// Velox "pools_.size() != 0" abort thrown from ~MemoryManager. A Velox task's
+// pools can briefly outlive the manager while async operators finish releasing
+// on background threads. The manager destructor must wait for those pools to be
+// released instead of tearing down the underlying Velox MemoryManager while
+// they are still alive.
+TEST_F(MemoryManagerTest, destructWaitsForOutstandingPools) {
+  // Emulate an async task holding a memory pool that keeps the manager's
+  // aggregate "root" pool alive. Nothing is reserved, mirroring the CI failure
+  // where the leaked pool reported 0 used/reserved bytes.
+  auto outstandingPool = vmm_->getAggregateMemoryPool()->addLeafChild("outstanding_async_task");
+
+  // Release the pool from another thread after a short delay, so the first
+  // destruct attempt fails and the retry/backoff has to kick in.
+  std::thread releaser([pool = std::move(outstandingPool)]() mutable {
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    pool.reset();
+  });
+
+  // Should return without crashing once the outstanding pool is released.
+  vmm_.reset();
+  releaser.join();
 }
 
 TEST_F(MemoryManagerTest, memoryAllocatorWithBlockReservation) {

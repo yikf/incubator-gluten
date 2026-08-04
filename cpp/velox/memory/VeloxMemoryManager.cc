@@ -20,6 +20,10 @@
 #include <jemalloc/jemalloc.h>
 #endif
 
+#include <unistd.h>
+#include <algorithm>
+#include <cmath>
+
 #include "compute/VeloxBackend.h"
 
 #include "velox/common/memory/MallocAllocator.h"
@@ -222,7 +226,10 @@ VeloxMemoryManager::VeloxMemoryManager(
     const std::string& kind,
     std::unique_ptr<AllocationListener> listener,
     const facebook::velox::config::ConfigBase& backendConf)
-    : MemoryManager(kind), listener_(std::move(listener)) {
+    : MemoryManager(kind),
+      listener_(std::move(listener)),
+      asyncTimeoutOnTaskStoppingMs_(
+          backendConf.get<int32_t>(kVeloxAsyncTimeoutOnTaskStopping, kVeloxAsyncTimeoutOnTaskStoppingDefault)) {
   auto reservationBlockSize =
       backendConf.get<uint64_t>(kMemoryReservationBlockSize, kMemoryReservationBlockSizeDefault);
   blockListener_ = std::make_unique<BlockAllocationListener>(listener_.get(), reservationBlockSize);
@@ -441,9 +448,29 @@ bool VeloxMemoryManager::tryDestructSafe() {
 }
 
 VeloxMemoryManager::~VeloxMemoryManager() {
-  bool destructed = tryDestructSafe();
+  // A Velox task's memory pools may outlive the task itself for a short window,
+  // because the task's async operators can still be releasing their resources on
+  // background executors when this manager is being destructed. If we give up on
+  // the first attempt, the outstanding pools keep the underlying Velox
+  // MemoryManager alive, and its destructor throws (pools_.size() != 0) which,
+  // being thrown from a destructor, escalates to std::terminate and crashes the
+  // whole process. So we retry with a bounded exponential backoff to give those
+  // async tasks a chance to finish before giving up.
+  const int32_t waitTimeoutMs = std::max(asyncTimeoutOnTaskStoppingMs_, 0);
+  int32_t accumulatedWaitMs = 0;
+  bool destructed = false;
+  for (int32_t tryCount = 0; !(destructed = tryDestructSafe()) && accumulatedWaitMs < waitTimeoutMs; tryCount++) {
+    uint32_t waitMs = 50 * static_cast<uint32_t>(pow(1.5, tryCount)); // 50ms, 75ms, 112.5ms ...
+    LOG(INFO) << "There are still outstanding Velox memory allocations. Waiting for " << waitMs
+              << " ms to let possible async tasks done... ";
+    usleep(waitMs * 1000);
+    accumulatedWaitMs += waitMs;
+  }
   if (!destructed) {
-    LOG(ERROR) << "Failed to release Velox memory manager as there are still outstanding memory resources. ";
+    LOG(ERROR) << "Failed to release Velox memory manager after " << accumulatedWaitMs
+               << " ms as there are still outstanding memory resources. ";
+  } else if (accumulatedWaitMs > 0) {
+    LOG(INFO) << "All the outstanding memory resources successfully released after " << accumulatedWaitMs << " ms. ";
   }
 #ifdef ENABLE_JEMALLOC_STATS
   malloc_stats_print(nullptr, nullptr, nullptr);

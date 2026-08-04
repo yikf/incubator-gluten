@@ -104,6 +104,9 @@ class VeloxMemoryManager final : public MemoryManager {
   bool tryDestructSafe();
 
   std::unique_ptr<AllocationListener> listener_;
+  // Max time to wait for outstanding async tasks to release their memory
+  // resources during destruction. See kVeloxAsyncTimeoutOnTaskStopping.
+  const int32_t asyncTimeoutOnTaskStoppingMs_;
   std::unique_ptr<AllocationListener> blockListener_;
 
   std::shared_ptr<ArrowMemoryPool> defaultArrowPool_;
