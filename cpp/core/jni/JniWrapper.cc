@@ -877,6 +877,7 @@ JNIEXPORT jlong JNICALL Java_org_apache_gluten_vectorized_ShuffleWriterJniWrappe
     jint splitBufferSize,
     jdouble splitBufferReallocThreshold,
     jint partitionBufferEvictThreshold,
+    jlong minMemLimit,
     jlong partitionWriterHandle,
     jboolean rowBasedChecksumEnabled) {
   JNI_METHOD_START
@@ -894,6 +895,7 @@ JNIEXPORT jlong JNICALL Java_org_apache_gluten_vectorized_ShuffleWriterJniWrappe
       splitBufferSize,
       splitBufferReallocThreshold,
       partitionBufferEvictThreshold);
+  shuffleWriterOptions->minMemLimit = minMemLimit;
   shuffleWriterOptions->rowBasedChecksumEnabled = rowBasedChecksumEnabled;
 
   return ctx->saveObject(ctx->createShuffleWriter(numPartitions, partitionWriter, shuffleWriterOptions));

@@ -43,4 +43,13 @@ class SparkConfigUtilSuite extends AnyFunSuiteLike {
     assert(SparkConfigUtil.get(conf, GlutenConfig.SHUFFLE_WRITER_BUFFER_SIZE) === Some(1024 * 1024))
     assert(SparkConfigUtil.get(conf, GlutenConfig.GLUTEN_LOAD_LIB_OS).isEmpty)
   }
+
+  test("COLUMNAR_SHUFFLE_WRITER_MIN_MEM_LIMIT default and override") {
+    val conf = new SparkConf()
+    // Defaults to 128MB when unset.
+    assert(conf.get(GlutenConfig.COLUMNAR_SHUFFLE_WRITER_MIN_MEM_LIMIT) === 128L * 1024 * 1024)
+    // Byte-size strings are parsed to bytes.
+    conf.set(GlutenConfig.COLUMNAR_SHUFFLE_WRITER_MIN_MEM_LIMIT.key, "256MB")
+    assert(conf.get(GlutenConfig.COLUMNAR_SHUFFLE_WRITER_MIN_MEM_LIMIT) === 256L * 1024 * 1024)
+  }
 }

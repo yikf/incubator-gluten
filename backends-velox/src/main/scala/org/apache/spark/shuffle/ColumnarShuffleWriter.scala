@@ -184,6 +184,7 @@ class ColumnarShuffleWriter[K, V](
               nativeBufferSize,
               reallocThreshold,
               GlutenConfig.get.columnarShufflePartitionBufferEvictThreshold,
+              GlutenConfig.get.columnarShuffleWriterMinMemLimit,
               partitionWriterHandle,
               rowBasedChecksumEnabled
             )

@@ -151,6 +151,7 @@ class VeloxCelebornColumnarShuffleWriter[K, V](
           nativeBufferSize,
           GlutenConfig.get.columnarShuffleReallocThreshold,
           GlutenConfig.get.columnarShufflePartitionBufferEvictThreshold,
+          GlutenConfig.get.columnarShuffleWriterMinMemLimit,
           partitionWriterHandle,
           false
         )

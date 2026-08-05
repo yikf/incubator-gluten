@@ -186,6 +186,7 @@ public class VeloxUniffleColumnarShuffleWriter<K, V> extends RssShuffleWriter<K,
                     nativeBufferSize,
                     reallocThreshold,
                     GlutenConfig.get().columnarShufflePartitionBufferEvictThreshold(),
+                    GlutenConfig.get().columnarShuffleWriterMinMemLimit(),
                     partitionWriterHandle,
                     false);
           }

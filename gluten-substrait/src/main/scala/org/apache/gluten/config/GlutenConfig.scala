@@ -225,6 +225,8 @@ class GlutenConfig(conf: SQLConf) extends GlutenCoreConfig(conf) {
   def columnarShufflePartitionBufferEvictThreshold: Int =
     getConf(COLUMNAR_SHUFFLE_PARTITION_BUFFER_EVICT_THRESHOLD)
 
+  def columnarShuffleWriterMinMemLimit: Long = getConf(COLUMNAR_SHUFFLE_WRITER_MIN_MEM_LIMIT)
+
   def columnarShuffleMergeThreshold: Double = getConf(SHUFFLE_WRITER_MERGE_THRESHOLD)
 
   def columnarShuffleCodec: Option[String] = getConf(COLUMNAR_SHUFFLE_CODEC)
@@ -1126,6 +1128,16 @@ object GlutenConfig extends ConfigRegistry {
           "after splitting an input batch. Use non-positive value to disable this feature.")
       .intConf
       .createWithDefault(-1)
+
+  val COLUMNAR_SHUFFLE_WRITER_MIN_MEM_LIMIT =
+    buildConf("spark.gluten.sql.columnar.shuffle.writer.minMemLimit")
+      .doc(
+        "For Velox hash shuffle writer, the minimum memory in bytes used to size the split " +
+          "buffers. A larger value keeps the split buffer as large as possible to get a bigger " +
+          "batch size for the reducer, at the cost of more memory usage.")
+      .bytesConf(ByteUnit.BYTE)
+      .checkValue(_ > 0, "must be positive.")
+      .createWithDefaultString("128MB")
 
   val COLUMNAR_SHUFFLE_CODEC =
     buildConf("spark.gluten.sql.columnar.shuffle.codec")

@@ -280,6 +280,7 @@ class VeloxHashShuffleWriter : public VeloxShuffleWriter {
         splitBufferSize_(options->splitBufferSize),
         splitBufferReallocThreshold_(options->splitBufferReallocThreshold),
         partitionBufferEvictThreshold_(options->partitionBufferEvictThreshold),
+        minMemLimit_(options->minMemLimit),
         rowBasedChecksumEnabled_(options->rowBasedChecksumEnabled) {
     arenas_.resize(numPartitions);
   }
@@ -401,6 +402,7 @@ class VeloxHashShuffleWriter : public VeloxShuffleWriter {
   int32_t splitBufferSize_;
   double splitBufferReallocThreshold_;
   int32_t partitionBufferEvictThreshold_;
+  int64_t minMemLimit_;
 
   std::shared_ptr<arrow::Schema> schema_;
 

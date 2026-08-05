@@ -44,6 +44,7 @@ public class ShuffleWriterJniWrapper implements RuntimeAware {
       int splitBufferSize,
       double splitBufferReallocThreshold,
       int partitionBufferEvictThreshold,
+      long minMemLimit,
       long partitionWriterHandle,
       boolean rowBasedChecksumEnabled);
 

@@ -938,9 +938,9 @@ uint32_t VeloxHashShuffleWriter::calculatePartitionBufferSize(const facebook::ve
   // The logic here is to keep the split buffer as large as possible, to get max batch size for reducer.
   memLimit += cachedPayloadSize();
 
-  // make sure split buffer uses 128M memory at least, let's hardcode it here for now
-  if (memLimit < kMinMemLimit) {
-    memLimit = kMinMemLimit;
+  // Make sure split buffer uses at least `minMemLimit_` bytes of memory.
+  if (memLimit < minMemLimit_) {
+    memLimit = minMemLimit_;
   }
 
   uint64_t preAllocRowCnt =

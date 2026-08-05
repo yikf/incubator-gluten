@@ -43,6 +43,7 @@ static constexpr int32_t kDefaultSortBufferSize = 4096;
 static constexpr int64_t kDefaultReadBufferSize = 1 << 20;
 static constexpr int64_t kDefaultDeserializerBufferSize = 1 << 20;
 static constexpr int64_t kDefaultShuffleFileBufferSize = 32 << 10;
+static constexpr int64_t kDefaultShuffleWriterMinMemLimit = 128LL * 1024 * 1024;
 static constexpr bool kDefaultEnableDictionary = false;
 static constexpr bool kDefaultEnableTypeAwareCompress = false;
 
@@ -93,6 +94,7 @@ struct HashShuffleWriterOptions : ShuffleWriterOptions {
   int32_t splitBufferSize = kDefaultShuffleWriterBufferSize;
   double splitBufferReallocThreshold = kDefaultSplitBufferReallocThreshold;
   int32_t partitionBufferEvictThreshold = kDefaultPartitionBufferEvictThreshold;
+  int64_t minMemLimit = kDefaultShuffleWriterMinMemLimit;
 
   HashShuffleWriterOptions() : ShuffleWriterOptions(ShuffleWriterType::kHashShuffle) {}
 
