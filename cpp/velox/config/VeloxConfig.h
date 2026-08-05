@@ -55,11 +55,10 @@ const std::string kSpillCompressionKind = "spark.gluten.sql.columnar.backend.vel
 const std::string kColumnarBatchSerializerCompression =
     "spark.gluten.sql.columnar.backend.velox.columnarBatchSerializerCompression";
 const std::string kColumnarBatchSerializerCompressionDefault = "none";
-const std::string kMaxPartialAggregationMemoryRatio =
-    "spark.gluten.sql.columnar.backend.velox.maxPartialAggregationMemoryRatio";
+// Absolute byte limits for partial aggregation. The values forwarded to Velox are resolved on the
+// Java side (see GlutenConfig#getNativeSessionConf) from the corresponding *Ratio confs and the
+// per-task off-heap size, so the native side only reads these resolved absolute values.
 const std::string kMaxPartialAggregationMemory = "spark.gluten.sql.columnar.backend.velox.maxPartialAggregationMemory";
-const std::string kMaxExtendedPartialAggregationMemoryRatio =
-    "spark.gluten.sql.columnar.backend.velox.maxExtendedPartialAggregationMemoryRatio";
 const std::string kMaxExtendedPartialAggregationMemory =
     "spark.gluten.sql.columnar.backend.velox.maxExtendedPartialAggregationMemory";
 const std::string kAbandonPartialAggregationMinPct =

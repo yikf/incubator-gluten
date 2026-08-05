@@ -608,6 +608,15 @@ object GlutenConfig extends ConfigRegistry {
         "true")
     }
 
+    // Resolve the partial aggregation memory byte limits on the Java side. This calculation used
+    // to live in WholeStageResultIterator.cc; the native side now only reads the resolved absolute
+    // values. See resolveVeloxPartialAggMemoryConf for the semantics.
+    if (backendName == "velox") {
+      resolveVeloxPartialAggMemoryConf(conf).foreach {
+        case (k, v) => nativeConfMap.put(k, v)
+      }
+    }
+
     // Pass the latest tokens to native
     nativeConfMap.put(
       ReservedKeys.GLUTEN_UGI_TOKENS,
@@ -620,6 +629,61 @@ object GlutenConfig extends ConfigRegistry {
 
     // return
     nativeConfMap.toMap
+  }
+
+  // Velox partial-aggregation memory conf keys. Declared as string literals because
+  // gluten-substrait cannot depend on backends-velox where the typed confs live.
+  private val VELOX_MAX_PARTIAL_AGGREGATION_MEMORY =
+    "spark.gluten.sql.columnar.backend.velox.maxPartialAggregationMemory"
+  private val VELOX_MAX_PARTIAL_AGGREGATION_MEMORY_RATIO =
+    "spark.gluten.sql.columnar.backend.velox.maxPartialAggregationMemoryRatio"
+  private val VELOX_MAX_EXTENDED_PARTIAL_AGGREGATION_MEMORY =
+    "spark.gluten.sql.columnar.backend.velox.maxExtendedPartialAggregationMemory"
+  private val VELOX_MAX_EXTENDED_PARTIAL_AGGREGATION_MEMORY_RATIO =
+    "spark.gluten.sql.columnar.backend.velox.maxExtendedPartialAggregationMemoryRatio"
+
+  /**
+   * Resolve the absolute partial-aggregation memory byte limits Velox expects. This logic used to
+   * live in WholeStageResultIterator.cc; it now runs on the Java side and the native side only
+   * reads the resolved values. The semantics mirror the original C++ code exactly:
+   * {{{
+   *   limit = max(floor, explicitBytes.getOrElse((ratio * perTaskOffHeap).toLong))
+   * }}}
+   * When the per-task off-heap size is absent, it falls back to `Long.MaxValue` to match the native
+   * default (facebook::velox::memory::kMaxMemory).
+   */
+  private[config] def resolveVeloxPartialAggMemoryConf(
+      conf: Map[String, String]): Map[String, String] = {
+    val offHeapPerTask = conf
+      .get(GlutenCoreConfig.COLUMNAR_TASK_OFFHEAP_SIZE_IN_BYTES.key)
+      .map(JavaUtils.byteStringAsBytes)
+      .getOrElse(Long.MaxValue)
+
+    def resolve(memoryKey: String, ratioKey: String, defaultRatio: Double, floor: Long): Long = {
+      val resolved = conf
+        .get(memoryKey)
+        .map(JavaUtils.byteStringAsBytes)
+        .getOrElse {
+          val ratio = conf.get(ratioKey).map(_.toDouble).getOrElse(defaultRatio)
+          (ratio * offHeapPerTask).toLong
+        }
+      math.max(floor, resolved)
+    }
+
+    Map(
+      VELOX_MAX_PARTIAL_AGGREGATION_MEMORY ->
+        resolve(
+          VELOX_MAX_PARTIAL_AGGREGATION_MEMORY,
+          VELOX_MAX_PARTIAL_AGGREGATION_MEMORY_RATIO,
+          0.1,
+          1 << 24).toString,
+      VELOX_MAX_EXTENDED_PARTIAL_AGGREGATION_MEMORY ->
+        resolve(
+          VELOX_MAX_EXTENDED_PARTIAL_AGGREGATION_MEMORY,
+          VELOX_MAX_EXTENDED_PARTIAL_AGGREGATION_MEMORY_RATIO,
+          0.15,
+          1 << 26).toString
+    )
   }
 
   /**

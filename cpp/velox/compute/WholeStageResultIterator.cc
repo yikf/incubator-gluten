@@ -540,24 +540,14 @@ std::unordered_map<std::string, std::string> WholeStageResultIterator::getQueryC
     configs[velox::core::QueryConfig::kAdjustTimestampToTimezone] = "true";
 
     {
-      // Find offheap size from Spark confs. If found, set the max memory usage of partial aggregation.
-      // Partial aggregation memory configurations.
-      // TODO: Move the calculations to Java side.
-      auto offHeapMemory = veloxCfg_->get<int64_t>(kSparkTaskOffHeapMemory, facebook::velox::memory::kMaxMemory);
-      auto maxPartialAggregationMemory = std::max<int64_t>(
-          1 << 24,
-          veloxCfg_->get<int64_t>(kMaxPartialAggregationMemory).has_value()
-              ? veloxCfg_->get<int64_t>(kMaxPartialAggregationMemory).value()
-              : static_cast<int64_t>(veloxCfg_->get<double>(kMaxPartialAggregationMemoryRatio, 0.1) * offHeapMemory));
-      auto maxExtendedPartialAggregationMemory = std::max<int64_t>(
-          1 << 26,
-          veloxCfg_->get<int64_t>(kMaxExtendedPartialAggregationMemory).has_value()
-              ? veloxCfg_->get<int64_t>(kMaxExtendedPartialAggregationMemory).value()
-              : static_cast<int64_t>(
-                    veloxCfg_->get<double>(kMaxExtendedPartialAggregationMemoryRatio, 0.15) * offHeapMemory));
-      configs[velox::core::QueryConfig::kMaxPartialAggregationMemory] = std::to_string(maxPartialAggregationMemory);
+      // Partial aggregation memory configurations. The absolute byte limits are resolved on the
+      // Java side (see GlutenConfig#getNativeSessionConf) from the configured ratio and per-task
+      // off-heap size, so here we only forward the resolved values to Velox. The floor defaults
+      // below are safety fallbacks for callers that do not go through the Java resolution path.
+      configs[velox::core::QueryConfig::kMaxPartialAggregationMemory] =
+          std::to_string(veloxCfg_->get<int64_t>(kMaxPartialAggregationMemory, 1L << 24));
       configs[velox::core::QueryConfig::kMaxExtendedPartialAggregationMemory] =
-          std::to_string(maxExtendedPartialAggregationMemory);
+          std::to_string(veloxCfg_->get<int64_t>(kMaxExtendedPartialAggregationMemory, 1L << 26));
       configs[velox::core::QueryConfig::kAbandonPartialAggregationMinPct] =
           std::to_string(veloxCfg_->get<int32_t>(kAbandonPartialAggregationMinPct, 90));
       configs[velox::core::QueryConfig::kAbandonPartialAggregationMinRows] =
