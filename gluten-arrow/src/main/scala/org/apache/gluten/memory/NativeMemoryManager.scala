@@ -75,10 +75,23 @@ object NativeMemoryManager {
 
     private val released: AtomicBoolean = new AtomicBoolean(false)
 
+    // Guards the native `handle` against use-after-release. `hold()` and `release()` may be
+    // invoked from different threads (e.g. a script-transformation feed thread closing its
+    // output iterator while the owning task is tearing the runtime down), so they must be
+    // mutually exclusive around the native calls. Otherwise `hold()` can dereference a handle
+    // that `release()` has already freed, causing a native SIGSEGV.
+    private val lock = new Object
+
     override def addSpiller(spiller: Spiller): Unit = spillers.append(spiller)
-    override def hold(): Unit = NativeMemoryManagerJniWrapper.hold(handle)
+    override def hold(): Unit = lock.synchronized {
+      if (!released.get()) {
+        NativeMemoryManagerJniWrapper.hold(handle)
+      }
+      // Otherwise the memory manager has already been released, so the underlying native handle
+      // is no longer valid. Holding is meaningless at this point and is a safe no-op.
+    }
     override def getHandle(): Long = handle
-    override def release(): Unit = {
+    override def release(): Unit = lock.synchronized {
       if (!released.compareAndSet(false, true)) {
         throw new GlutenException(
           s"Memory manager instance already released: $handle")
