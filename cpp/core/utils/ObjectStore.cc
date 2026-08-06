@@ -46,12 +46,19 @@ std::pair<gluten::ObjectStore*, gluten::ResourceHandle> gluten::ObjectStore::loo
 
 gluten::ObjectStore::~ObjectStore() {
   for (;;) {
-    if (aliveObjects_.empty()) {
-      break;
-    }
     std::shared_ptr<void> tempObj;
     {
       const std::lock_guard<std::mutex> lock(mtx_);
+      // The empty-check and the pop of the last alive object must be atomic under `mtx_`. Another
+      // thread may still call the static `ObjectStore::release()` on this store while it is being
+      // destructed (e.g. a script-transformation feed thread closing its output iterator during
+      // task teardown), which erases entries from `aliveObjects_` under the lock. If the check were
+      // done outside the lock, a concurrent erase could empty the map between the check and
+      // `rbegin()`, making `rbegin()` dereference an empty tree and crash with a native SIGSEGV in
+      // `std::_Rb_tree_decrement`.
+      if (aliveObjects_.empty()) {
+        break;
+      }
       // destructing in reversed order (the last added object destructed first)
       auto itr = aliveObjects_.rbegin();
       const ResourceHandle handle = (*itr).first;
