@@ -570,16 +570,15 @@ object ExpressionConverter extends SQLConfHelper with Logging {
           ),
           r
         )
-      case instr: TernaryExpression if instr.getClass.getSimpleName.equals("RegExpInStr") =>
+      case instr: RegExpInStr =>
         // Spark's RegExpInStr carries a third `idx` child but ignores it during
         // evaluation (it always returns the start position of the whole match).
         // Velox's regexp_instr only takes (subject, regexp), so drop the idx child.
-        // Matched by class name because RegExpInStr does not exist in Spark 3.3.
         GenericExpressionTransformer(
           substraitExprName,
           Seq(
-            replaceWithExpressionTransformer0(instr.first, attributeSeq, expressionsMap),
-            replaceWithExpressionTransformer0(instr.second, attributeSeq, expressionsMap)
+            replaceWithExpressionTransformer0(instr.subject, attributeSeq, expressionsMap),
+            replaceWithExpressionTransformer0(instr.regexp, attributeSeq, expressionsMap)
           ),
           instr
         )

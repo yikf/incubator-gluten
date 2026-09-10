@@ -34,7 +34,6 @@ import org.apache.gluten.sql.shims.SparkShimLoader
 
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources.noop.GlutenNoopWriterRule
-import org.apache.spark.util.SparkVersionUtil
 
 class VeloxRuleApi extends RuleApi {
   import VeloxRuleApi._
@@ -104,12 +103,10 @@ object VeloxRuleApi {
       Seq(
         RewriteIn,
         RewriteMultiChildrenCount,
-        RewriteJoin) ++
-        (if (SparkVersionUtil.eqSpark33) Seq(AlignExpandOutputTypes) else Seq.empty) ++
-        Seq(
-          PullOutPreProject,
-          PullOutPostProject,
-          ProjectColumnPruning)
+        RewriteJoin,
+        PullOutPreProject,
+        PullOutPostProject,
+        ProjectColumnPruning)
     injector.injectTransform(
       c =>
         HeuristicTransform.WithRewrites(
