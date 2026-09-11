@@ -188,6 +188,7 @@ object CHExpressionUtil {
     ENCODE -> EncodeDecodeValidator(),
     DATE_FROM_UNIX_DATE -> DefaultValidator(),
     SPARK_PARTITION_ID -> DefaultValidator(),
+    MONOTONICALLY_INCREASING_ID -> DefaultValidator(),
     AT_LEAST_N_NON_NULLS -> DefaultValidator(),
     URL_DECODE -> DefaultValidator(),
     URL_ENCODE -> DefaultValidator(),
