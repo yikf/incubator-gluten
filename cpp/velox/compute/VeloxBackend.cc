@@ -335,7 +335,7 @@ folly::Executor* VeloxBackend::hashTableBuildExecutor() {
     if (numThreads <= 0) {
       // Fall back to the executor's task-slot count, matching the sizing this build path
       // previously inherited from the io executor.
-      numThreads = backendConf_->get<int32_t>(kNumTaskSlotsPerExecutor, 1);
+      numThreads = std::max<int32_t>(1, backendConf_->get<int32_t>(kNumTaskSlotsPerExecutor, 1));
     }
     hashTableBuildExecutor_ = std::make_unique<folly::CPUThreadPoolExecutor>(numThreads);
   });
