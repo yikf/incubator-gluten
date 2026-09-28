@@ -116,8 +116,9 @@ object GlutenDriverEndpoint extends Logging
       .build[String, util.Set[String]]()
 
   def collectResources(executionId: String, resourceId: String): Unit = {
+    // Broadcast plans can register resources concurrently on driver threads.
     val resources = executionResourceRelation
-      .get(executionId, (_: String) => new util.HashSet[String]())
+      .get(executionId, (_: String) => ConcurrentHashMap.newKeySet[String]())
     resources.add(resourceId)
   }
 
