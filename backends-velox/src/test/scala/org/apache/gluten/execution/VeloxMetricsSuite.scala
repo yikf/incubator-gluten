@@ -322,6 +322,7 @@ class VeloxMetricsSuite extends VeloxWholeStageTransformerSuite with AdaptiveSpa
               assert(inputIterator.isDefined)
               val metrics = inputIterator.get.metrics
               assert(metrics("numOutputRows").value == partTableRecords)
+              assert(metrics("cpuNanos").value > 0)
           }
         }
     }
