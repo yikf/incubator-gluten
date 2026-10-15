@@ -17,6 +17,8 @@
 package org.apache.gluten.metrics
 
 import org.apache.spark.sql.execution.metric.SQLMetric
+import org.apache.spark.sql.utils.SparkMetricsUtil
+import org.apache.spark.task.TaskResources
 
 class WindowMetricsUpdater(val metrics: Map[String, SQLMetric]) extends MetricsUpdater {
 
@@ -35,6 +37,14 @@ class WindowMetricsUpdater(val metrics: Map[String, SQLMetric]) extends MetricsU
       metrics("spilledPartitions") += operatorMetrics.spilledPartitions
       metrics("spilledFiles") += operatorMetrics.spilledFiles
       metrics("loadLazyVectorTime") += operatorMetrics.loadLazyVectorTime
+      if (TaskResources.inSparkTask()) {
+        SparkMetricsUtil.incMemoryBytesSpilled(
+          TaskResources.getLocalTaskContext().taskMetrics(),
+          operatorMetrics.spilledInputBytes)
+        SparkMetricsUtil.incDiskBytesSpilled(
+          TaskResources.getLocalTaskContext().taskMetrics(),
+          operatorMetrics.spilledBytes)
+      }
     }
   }
 }
